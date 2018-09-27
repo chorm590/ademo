@@ -139,6 +139,7 @@ public class Watch extends View {
             paint.setColor(Color.argb(0xff, 0xdb, 0xdb, 0xdb)); //I need lightly gray...
 
             bottleLayerOuterRadius = outBorderRadius2 - 9;
+            Logger.debug(TAG, "bottle layer outer radius:" + bottleLayerOuterRadius);
             canvas.drawCircle(centerOfPoint.x, centerOfPoint.y, bottleLayerOuterRadius, paint);
         }
 
@@ -150,7 +151,25 @@ public class Watch extends View {
             paint.setAntiAlias(true);
             paint.setColor(Color.argb(0xff, 0xfa, 0xfa, 0xd2)); //要磨砂的！！！
             bottleLayerInnerRadius = (float) (bottleLayerOuterRadius - 7.5);
+            Logger.debug(TAG, "Bottle layer inner radius:" + bottleLayerInnerRadius);
             canvas.drawCircle(centerOfPoint.x, centerOfPoint.y, bottleLayerInnerRadius, paint);
+        }
+
+        /**
+         * 刻度
+         * */
+        void drawScale(Canvas canvas){
+            Paint normalPaint = new Paint();
+            normalPaint.setColor(Color.BLACK);
+
+            Paint mainPaint = new Paint();
+            mainPaint.setColor(Color.BLACK);
+
+            Paint dividePaint = new Paint();
+            dividePaint.setColor(Color.YELLOW);
+            dividePaint.setAntiAlias(true);
+
+
         }
 
     }
