@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PointF;
+import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -52,8 +53,10 @@ public class Watch extends View {
         mShape.drawCenterPoint(canvas);
 
         //3. logo.
+        mShape.drawLogo(canvas);
 
         //4. date.
+        mShape.drawDate(canvas);
 
         //5. indicator.
 
@@ -81,6 +84,7 @@ public class Watch extends View {
         float outBorderRadius2;
         float bottleLayerOuterRadius;
         float bottleLayerInnerRadius;
+        float logoDownTextY;
 
         Shape(){
             Logger.debug(TAG, "new Shape()");
@@ -112,7 +116,7 @@ public class Watch extends View {
             paint.setColor(Color.GRAY);
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(2);
-            canvas.drawRect(1, 0, rdPoint.x, rdPoint.y, paint);
+            canvas.drawRect(0, 0, rdPoint.x, rdPoint.y, paint);
         }
 
         /**
@@ -186,7 +190,7 @@ public class Watch extends View {
             Paint dividePaint = new Paint();
             dividePaint.setColor(Color.RED);
             dividePaint.setAntiAlias(true);
-            Mathematic math = new Mathematic();
+            Mathematics math = new Mathematics();
             PointF pos;
             Logger.debug(TAG, "scale radius:"+ Watch.this.mShape.bottleLayerOuterRadius);
             for(int i = 1/*Must begin with 1.*/; i < 13; i++){
@@ -195,12 +199,49 @@ public class Watch extends View {
                     pos = math.calPointInSmallDivider(i, j);
                     canvas.drawCircle(pos.x, pos.y, 2, normalPaint);
                 }
-
                 pos = math.calPointInDivider(i);
                 Logger.debug(TAG, "draw x:" + pos.x + ",draw y:" + pos.y);
                 canvas.drawCircle(pos.x, pos.y, 5, dividePaint);
             }
+        }
 
+        void drawLogo(Canvas canvas){
+            //上方的文字。
+            //内底盘高度的0.618位置。
+            float x = centerOfPoint.x;
+            float y = Watch.this.mShape.bottleLayerInnerRadius * 0.618f;
+            Paint paint = new Paint();
+            paint.setColor(Color.WHITE);
+            paint.setAntiAlias(true);
+            paint.setTextSize(50);
+            paint.setTextAlign(Paint.Align.CENTER);
+            paint.setTypeface(Typeface.DEFAULT_BOLD);
+            canvas.drawText("LMT", x, y, paint);
+
+            //下方的文字
+            logoDownTextY = Watch.this.mShape.bottleLayerInnerRadius * 1.7f;
+            Paint downTextPaint = new Paint();
+            downTextPaint.setAntiAlias(true);
+            downTextPaint.setColor(Color.WHITE);
+            downTextPaint.setTextSize(28);
+            downTextPaint.setTextAlign(Paint.Align.CENTER);
+
+            canvas.drawText("TOMYGIRL", x, logoDownTextY, downTextPaint);
+        }
+
+        void drawDate(Canvas canvas){
+            //金色的矩形外框。
+            Paint rectPaint = new Paint();
+            rectPaint.setColor(Color.argb(0xff, 0xf0, 0xe6, 0x8c));
+            rectPaint.setAntiAlias(true);
+            rectPaint.setStyle(Paint.Style.STROKE);
+            rectPaint.setStrokeWidth(7);
+
+            float left = centerOfPoint.x - 30;
+            float top = logoDownTextY + 30;
+            float right = centerOfPoint.x + 30;
+            float bottom = top + 60;
+            canvas.drawRect(left, top, right, bottom, rectPaint);
         }
 
     }
@@ -215,7 +256,7 @@ public class Watch extends View {
     /**
      * 提供各种数学运算服务。
      * */
-    private class Mathematic{
+    private class Mathematics{
 
         //将圆分割成12等分，每个等分占的度数。
         final float DEGRESS_IN_DIVIDER = 360 / 12; // 30
@@ -232,11 +273,11 @@ public class Watch extends View {
                 throw new IllegalArgumentException("A circle can't be divide more than twelve parts");
             }
             PointF point = new PointF();
-            double angle = getRadianInAngle(180 - DEGRESS_IN_DIVIDER * idx);
+            double radians = getRadianInAngle(DEGRESS_IN_DIVIDER * idx);
             //get x length.
-            double x = Watch.this.mShape.bottleLayerOuterRadius * Math.sin(angle);
+            double x = Watch.this.mShape.bottleLayerOuterRadius * Math.sin(radians);
             //get y length.
-            double y = Watch.this.mShape.bottleLayerOuterRadius * Math.cos(angle);
+            double y = Watch.this.mShape.bottleLayerOuterRadius * Math.cos(radians);
             Logger.debug(TAG, "cal x:" + x + ",y:" + y);
             point.set(centerOfPoint.x, centerOfPoint.y);
             point.offset(Float.valueOf(String.format("%.3f", x)), Float.valueOf(String.format("%.3f", y)));
