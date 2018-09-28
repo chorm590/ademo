@@ -177,6 +177,7 @@ public class Watch extends View {
             //普通刻度
             Paint normalPaint = new Paint();
             normalPaint.setColor(Color.BLACK);
+            normalPaint.setAntiAlias(true);
 
             //整点时刻刻度
             Paint mainPaint = new Paint();
@@ -189,6 +190,12 @@ public class Watch extends View {
             PointF pos;
             Logger.debug(TAG, "scale radius:"+ Watch.this.mShape.bottleLayerOuterRadius);
             for(int i = 1/*Must begin with 1.*/; i < 13; i++){
+                Logger.debug(TAG, "drawing small scale.");
+                for(int j = 1; j < 5; j++){
+                    pos = math.calPointInSmallDivider(i, j);
+                    canvas.drawCircle(pos.x, pos.y, 2, normalPaint);
+                }
+
                 pos = math.calPointInDivider(i);
                 Logger.debug(TAG, "draw x:" + pos.x + ",draw y:" + pos.y);
                 canvas.drawCircle(pos.x, pos.y, 5, dividePaint);
@@ -211,7 +218,10 @@ public class Watch extends View {
     private class Mathematic{
 
         //将圆分割成12等分，每个等分占的度数。
-        final float DEGRESS_IN_DIVIDER = 360 / 12;
+        final float DEGRESS_IN_DIVIDER = 360 / 12; // 30
+
+        //分的刻度度数。
+        final float DEGREE_IN_MINUTE_DIVIDER = 30 / 5; //6
 
         /**
          * Calculate the twelve points' coordinate on scale.
@@ -232,6 +242,24 @@ public class Watch extends View {
             point.offset(Float.valueOf(String.format("%.3f", x)), Float.valueOf(String.format("%.3f", y)));
 
             return point;
+        }
+
+        /**
+         * 计算小分钟的刻度坐标。
+         * */
+        PointF calPointInSmallDivider(int majorIdx, int curIdx){
+            Logger.debug(TAG, "calculate small scale,majorIdx:" + majorIdx + ",curIdx:" + curIdx);
+            double radians = getRadianInAngle(curIdx * DEGREE_IN_MINUTE_DIVIDER +((majorIdx - 1) * DEGRESS_IN_DIVIDER));
+            Logger.debug(TAG, "radians:" + radians);
+            double x = Watch.this.mShape.bottleLayerOuterRadius * Math.sin(radians);
+            double y = Watch.this.mShape.bottleLayerOuterRadius * Math.cos(radians);
+            Logger.debug(TAG, "cal x:" + x + ",y:" + y);
+
+            PointF pointF = new PointF();
+            pointF.set(centerOfPoint.x, centerOfPoint.y);
+            pointF.offset(Float.valueOf(String.format("%.3f", x)), Float.valueOf(String.format("%.3f", y)));
+
+            return pointF;
         }
 
         private double getRadianInAngle(float v) {
