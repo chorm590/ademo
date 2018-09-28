@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -37,8 +38,9 @@ public class Watch extends View {
         //set background transparent.
         canvas.drawColor(Color.alpha(0));
 
-        mShape.drawZeroPoint(canvas);
         mShape.drawViewBorderRect(canvas);
+        mShape.drawZeroPoint(canvas);
+
         //1. out border.
         mShape.drawOutBorder(canvas);
         mShape.drawOutBorder2(canvas);
@@ -46,6 +48,8 @@ public class Watch extends View {
         //2. bottle layer.
         mShape.drawBottleLayerOuter(canvas);
         mShape.drawBottleLayerInner(canvas);
+        mShape.drawScale(canvas); //尝试绘制点。
+        mShape.drawCenterPoint(canvas);
 
         //3. logo.
 
@@ -83,10 +87,21 @@ public class Watch extends View {
         }
 
         void drawZeroPoint(Canvas canvas){
-            Logger.debug(TAG, "draw zero-point");
+            Logger.debug(TAG, "draw zero-point,x:0,y:0");
             Paint paint = new Paint();
             paint.setColor(Color.RED);
             canvas.drawCircle(0, 0, 7, paint);
+        }
+
+        void drawCenterPoint(Canvas canvas){
+            Logger.debug(TAG, "draw center-point,x:" + centerOfPoint.x + ",y:" + centerOfPoint.y);
+            Paint paint = new Paint();
+            paint.setColor(Color.argb(0xff, 0x8b, 0x5a, 0x2b));
+            paint.setAntiAlias(true);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(2.5f);
+
+            canvas.drawCircle(centerOfPoint.x, centerOfPoint.y, 5.0f, paint);
         }
 
         /**
@@ -159,16 +174,25 @@ public class Watch extends View {
          * 刻度
          * */
         void drawScale(Canvas canvas){
+            //普通刻度
             Paint normalPaint = new Paint();
             normalPaint.setColor(Color.BLACK);
 
+            //整点时刻刻度
             Paint mainPaint = new Paint();
             mainPaint.setColor(Color.BLACK);
 
             Paint dividePaint = new Paint();
-            dividePaint.setColor(Color.YELLOW);
+            dividePaint.setColor(Color.RED);
             dividePaint.setAntiAlias(true);
-
+            Mathematic math = new Mathematic();
+            PointF pos;
+            Logger.debug(TAG, "scale radius:"+ Watch.this.mShape.bottleLayerOuterRadius);
+            for(int i = 1/*Must begin with 1.*/; i < 13; i++){
+                pos = math.calPointInDivider(i);
+                Logger.debug(TAG, "draw x:" + pos.x + ",draw y:" + pos.y);
+                canvas.drawCircle(pos.x, pos.y, 5, dividePaint);
+            }
 
         }
 
@@ -179,6 +203,41 @@ public class Watch extends View {
      * */
     private class ColorManager{
 
+    }
+
+    /**
+     * 提供各种数学运算服务。
+     * */
+    private class Mathematic{
+
+        //将圆分割成12等分，每个等分占的度数。
+        final float DEGRESS_IN_DIVIDER = 360 / 12;
+
+        /**
+         * Calculate the twelve points' coordinate on scale.
+         * */
+        PointF calPointInDivider(int idx){
+            Logger.debug(TAG, "calPointInDivider:>>>> " + idx + " <<<<");
+            if(idx > 12){
+                throw new IllegalArgumentException("A circle can't be divide more than twelve parts");
+            }
+            PointF point = new PointF();
+            double angle = getRadianInAngle(180 - DEGRESS_IN_DIVIDER * idx);
+            //get x length.
+            double x = Watch.this.mShape.bottleLayerOuterRadius * Math.sin(angle);
+            //get y length.
+            double y = Watch.this.mShape.bottleLayerOuterRadius * Math.cos(angle);
+            Logger.debug(TAG, "cal x:" + x + ",y:" + y);
+            point.set(centerOfPoint.x, centerOfPoint.y);
+            point.offset(Float.valueOf(String.format("%.3f", x)), Float.valueOf(String.format("%.3f", y)));
+
+            return point;
+        }
+
+        private double getRadianInAngle(float v) {
+            Logger.debug(TAG, "getRadianInAngle:" + v);
+            return v*Math.PI/180;
+        }
     }
 
 }
