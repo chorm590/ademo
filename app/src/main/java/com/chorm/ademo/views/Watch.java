@@ -240,7 +240,7 @@ public class Watch extends View {
             float left = centerOfPoint.x - 30;
             float top = logoDownTextY + 30;
             float right = centerOfPoint.x + 30;
-            float bottom = top + 60;
+            float bottom = top + 70;
             canvas.drawRect(left, top, right, bottom, rectPaint);
         }
 
