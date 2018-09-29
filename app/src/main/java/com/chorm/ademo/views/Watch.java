@@ -211,22 +211,22 @@ public class Watch extends View {
             float x = centerOfPoint.x;
             float y = Watch.this.mShape.bottleLayerInnerRadius * 0.618f;
             Paint paint = new Paint();
-            paint.setColor(Color.WHITE);
+            paint.setColor(Color.BLACK);
             paint.setAntiAlias(true);
-            paint.setTextSize(50);
+            paint.setTextSize(36);
             paint.setTextAlign(Paint.Align.CENTER);
             paint.setTypeface(Typeface.DEFAULT_BOLD);
-            canvas.drawText("LMT", x, y, paint);
+            canvas.drawText("ROSSINI", x, y, paint);
 
             //下方的文字
             logoDownTextY = Watch.this.mShape.bottleLayerInnerRadius * 1.7f;
             Paint downTextPaint = new Paint();
             downTextPaint.setAntiAlias(true);
-            downTextPaint.setColor(Color.WHITE);
-            downTextPaint.setTextSize(28);
+            downTextPaint.setColor(Color.BLACK);
+            downTextPaint.setTextSize(20);
             downTextPaint.setTextAlign(Paint.Align.CENTER);
 
-            canvas.drawText("TOMYGIRL", x, logoDownTextY, downTextPaint);
+            canvas.drawText("SAPPHIRE", x, logoDownTextY, downTextPaint);
         }
 
         void drawDate(Canvas canvas){
@@ -303,10 +303,20 @@ public class Watch extends View {
             return pointF;
         }
 
+        /**
+         * 角度转化成弧度。
+         * */
         private double getRadianInAngle(float v) {
             Logger.debug(TAG, "getRadianInAngle:" + v);
             return v*Math.PI/180;
         }
+    }
+
+    /**
+     * 统一单位管理。将dpi转成dp
+     * */
+    private class UnitManager{
+
     }
 
 }
