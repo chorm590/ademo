@@ -49,7 +49,6 @@ public class Watch extends View {
         //2. bottle layer.
         mShape.drawBottleLayerOuter(canvas);
         mShape.drawBottleLayerInner(canvas);
-        mShape.drawScale(canvas); //尝试绘制点。
         mShape.drawCenterPoint(canvas);
 
         //3. logo.
@@ -59,8 +58,10 @@ public class Watch extends View {
         mShape.drawDate(canvas);
 
         //5. indicator.
+        mShape.drawScale(canvas); //尝试绘制点。
 
-        //6.
+        //6. pointer
+        mShape.drawPointer(canvas);
 
         //7. glass cover.
 
@@ -242,6 +243,35 @@ public class Watch extends View {
             float right = centerOfPoint.x + 30;
             float bottom = top + 70;
             canvas.drawRect(left, top, right, bottom, rectPaint);
+
+            //白色的日期显示背景。
+            Paint bgPaint = new Paint();
+            bgPaint.setColor(Color.WHITE); //最好搞个白色磨砂的。
+            bgPaint.setAntiAlias(true);
+
+            canvas.drawRect(left + 3.5f, top + 3.5f, right - 3.5f, bottom - 3.5f, bgPaint);
+
+            //日期数字。
+            Paint datePaint = new Paint();
+            datePaint.setAntiAlias(true);
+            datePaint.setTextSize(40);
+            datePaint.setTextAlign(Paint.Align.CENTER);
+
+            Paint.FontMetrics fm = datePaint.getFontMetrics();
+
+            canvas.drawText("31", left + (right - left) / 2, top + (bottom - top) / 2 - (fm.top + fm.bottom) / 2, datePaint);
+        }
+
+        void drawPointer(Canvas canvas){
+            Logger.debug(TAG, "drawPointer");
+            //hours
+            Paint hourPaint = new Paint();
+
+            //minutes
+            Paint minutePaint = new Paint();
+
+            //seconds
+            Paint secondPaint = new Paint();
         }
 
     }
@@ -312,11 +342,15 @@ public class Watch extends View {
         }
     }
 
-    /**
-     * 统一单位管理。将dpi转成dp
-     * */
-    private class UnitManager{
 
+    /**
+     * 统一尺寸管理。
+     * 本View中所有尺寸均在这里注册。
+     * 同时提供尺寸转换服务。
+     * */
+    private class SizeManager {
+
+        //日期部分的尺寸。
     }
 
 }
