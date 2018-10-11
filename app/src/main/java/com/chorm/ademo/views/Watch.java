@@ -267,6 +267,7 @@ public class Watch extends View {
             //hours
             Paint hourPaint = new Paint();
 
+
             //minutes
             Paint minutePaint = new Paint();
 
@@ -280,6 +281,10 @@ public class Watch extends View {
      * 一站式色彩管理方案提供商。
      * */
     private class ColorManager{
+
+        Color pointerHour;
+        Color pointerMinute;
+        Color pointerSecond;
 
     }
 
