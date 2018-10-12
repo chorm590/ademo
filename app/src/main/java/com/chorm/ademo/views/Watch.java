@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Typeface;
@@ -17,6 +18,7 @@ public class Watch extends View {
     private static final String TAG = "Watch";
 
     private Shape mShape;
+    private ColorManager mColorManager;
 
     /**The point of the view's center.*/
     private Point centerOfPoint;
@@ -27,9 +29,32 @@ public class Watch extends View {
         super(context, attrs);
         Logger.debug(TAG, "new Watch(Context,attrs)");
         mShape = new Shape();
+        mColorManager = new ColorManager();
         centerOfPoint = new Point();
         rdPoint = new Point();
+
+        //set pointer color
+        setPointerColor(0xfff0e68c, 0xfff0e68c, 0xfff0e68c);
     }
+
+    private void setPointerColor(int hourp, int minutep, int secondp){
+        if(hourp == 0)
+            mColorManager.colorIntPointerHour = Color.argb(0xff, 0xff, 0xff, 0xff);
+        else
+            mColorManager.colorIntPointerHour = hourp;
+
+        if(minutep == 0)
+            mColorManager.colorIntPointerMinute = Color.argb(0xff, 0xff, 0xff, 0xff);
+        else
+            mColorManager.colorIntPointerMinute = minutep;
+
+        if(secondp == 0)
+            mColorManager.colorIntPointerSecond = Color.argb(0xff, 0xff, 0xff, 0xff);
+        else
+            mColorManager.colorIntPointerSecond = secondp;
+    }
+
+// ------------------------------------------------------------------------------------------------------------------------------
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -266,7 +291,12 @@ public class Watch extends View {
             Logger.debug(TAG, "drawPointer");
             //hours
             Paint hourPaint = new Paint();
+            hourPaint.setColor(mColorManager.colorIntPointerHour);
+            hourPaint.setAntiAlias(true);
 
+            Path hourPointerPath = new Path();
+            hourPointerPath.moveTo(, );
+            canvas.drawPath(hourPointerPath, hourPaint);
 
             //minutes
             Paint minutePaint = new Paint();
@@ -282,9 +312,9 @@ public class Watch extends View {
      * */
     private class ColorManager{
 
-        Color pointerHour;
-        Color pointerMinute;
-        Color pointerSecond;
+        int colorIntPointerHour;
+        int colorIntPointerMinute;
+        int colorIntPointerSecond;
 
     }
 
