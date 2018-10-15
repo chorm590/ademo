@@ -125,9 +125,9 @@ public class Watch extends View {
     }
 
     public void refresh(){
-        mShape.hourAngle += 15;
-        if(mShape.hourAngle >= 360)
-            mShape.hourAngle = 0;
+        mShape.secondAngle -= 6;
+        if(mShape.secondAngle <= 0)
+            mShape.secondAngle = 360;
     }
 
     /**
@@ -147,9 +147,9 @@ public class Watch extends View {
 
         Shape(){
             Logger.debug(TAG, "new Shape()");
-            hourAngle = 86;
-            minuteAngle = 119;
-            secondAngle = 280;
+            hourAngle = 330;
+            minuteAngle = 60;
+            secondAngle = 10;
         }
 
         void drawZeroPoint(Canvas canvas){
@@ -377,6 +377,7 @@ public class Watch extends View {
             secondPaint.setAntiAlias(true);
 
             //Calculate.
+            Logger.debug(TAG, "second angle:" + secondAngle);
             Path secondPath = new Path();
             a = math.calSecondTriangle(TRIANGLE_POINT.POINT_A, secondAngle);
             secondPath.moveTo(a.x, a.y);
@@ -541,18 +542,18 @@ public class Watch extends View {
         PointF calSecondTriangle(TRIANGLE_POINT point, float angle){
             PointF pointF = new PointF();
             pointF.set(centerOfPoint.x, centerOfPoint.y);
-            float width = 16; //
-            float height = 244;
+            float width = 50; //
+            float height = 288;
             double radians;
             float length;
             if(point == TRIANGLE_POINT.POINT_A){
                 radians = getRadianInAngle(angle);
                 length = width;
             }else if(point == TRIANGLE_POINT.POINT_B){
-                radians = getRadianInAngle(angle + 135);
+                radians = getRadianInAngle(angle + 170);
                 length = height;
             }else if(point == TRIANGLE_POINT.POINT_C){
-                radians = getRadianInAngle(angle - 90);
+                radians = getRadianInAngle(angle - 20);
                 length = width;
             }else{
                 radians = 0;
@@ -572,7 +573,7 @@ public class Watch extends View {
          * 角度转化成弧度。
          * */
         private double getRadianInAngle(float v) {
-            Logger.debug(TAG, "getRadianInAngle:" + v);
+//            Logger.debug(TAG, "getRadianInAngle:" + v);
             return v*Math.PI/180;
         }
     }
@@ -585,7 +586,23 @@ public class Watch extends View {
      * */
     private class SizeManager {
 
+        private final String TAG = "Watch.SizeManager";
+
         //日期部分的尺寸。
+    }
+
+    /**
+     * 统一管理时钟与日期功能。
+     */
+    private class Clock {
+
+        private final String TAG = "Watch.Clock";
+
+        Clock(){
+            Logger.debug(TAG, "new Clock()");
+        }
+
+
     }
 
 }
