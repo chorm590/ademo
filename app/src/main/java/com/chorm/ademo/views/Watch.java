@@ -25,6 +25,12 @@ public class Watch extends View {
     /**The 'right-down point' of this view.*/
     private Point rdPoint;
 
+    enum TRIANGLE_POINT{
+        POINT_A,
+        POINT_B,
+        POINT_C
+    };
+
     public Watch(Context context, AttributeSet attrs) {
         super(context, attrs);
         Logger.debug(TAG, "new Watch(Context,attrs)");
@@ -149,7 +155,7 @@ public class Watch extends View {
          * 最外层的边框。
          * */
         void drawOutBorder(Canvas canvas){
-            Logger.debug(TAG, "draw out border...");
+            Logger.debug(TAG, ">>> draw out border <<<");
             Paint paint = new Paint();
             paint.setAntiAlias(true);
             paint.setColor(Color.argb(0xff, 0xf0, 0xe6, 0x8c));
@@ -204,6 +210,7 @@ public class Watch extends View {
          * 刻度
          * */
         void drawScale(Canvas canvas){
+            Logger.debug(TAG, ">>> drawScale <<<");
             //普通刻度
             Paint normalPaint = new Paint();
             normalPaint.setColor(Color.BLACK);
@@ -220,7 +227,7 @@ public class Watch extends View {
             PointF pos;
             Logger.debug(TAG, "scale radius:"+ Watch.this.mShape.bottleLayerOuterRadius);
             for(int i = 1/*Must begin with 1.*/; i < 13; i++){
-                Logger.debug(TAG, "drawing small scale.");
+//                Logger.debug(TAG, "drawing small scale.");
                 for(int j = 1; j < 5; j++){
                     pos = math.calPointInSmallDivider(i, j);
                     canvas.drawCircle(pos.x, pos.y, 2, normalPaint);
@@ -232,6 +239,7 @@ public class Watch extends View {
         }
 
         void drawLogo(Canvas canvas){
+            Logger.debug(TAG, ">>> drawLogo <<<");
             //上方的文字。
             //内底盘高度的0.618位置。
             float x = centerOfPoint.x;
@@ -256,6 +264,7 @@ public class Watch extends View {
         }
 
         void drawDate(Canvas canvas){
+            Logger.debug(TAG, ">>> drawDate <<<");
             //金色的矩形外框。
             Paint rectPaint = new Paint();
             rectPaint.setColor(Color.argb(0xff, 0xf0, 0xe6, 0x8c));
@@ -288,14 +297,22 @@ public class Watch extends View {
         }
 
         void drawPointer(Canvas canvas){
-            Logger.debug(TAG, "drawPointer");
+            Logger.debug(TAG, ">>> drawPointer <<<");
             //hours
             Paint hourPaint = new Paint();
             hourPaint.setColor(mColorManager.colorIntPointerHour);
             hourPaint.setAntiAlias(true);
-
+            //calculate the triangle point.
+            Mathematics math = new Mathematics();
+            float angle = 45;
+            PointF a = math.calHourBackTriangle(TRIANGLE_POINT.POINT_A, angle);
             Path hourPointerPath = new Path();
-            hourPointerPath.moveTo(, );
+            hourPointerPath.moveTo(a.x, a.y);
+            a = math.calHourBackTriangle(TRIANGLE_POINT.POINT_B, angle);
+            hourPointerPath.lineTo(a.x, a.y);
+            a = math.calHourBackTriangle(TRIANGLE_POINT.POINT_C, angle);
+            hourPointerPath.lineTo(a.x, a.y);
+            hourPointerPath.close();
             canvas.drawPath(hourPointerPath, hourPaint);
 
             //minutes
@@ -342,7 +359,7 @@ public class Watch extends View {
             //get x length.
             double x = Watch.this.mShape.bottleLayerOuterRadius * Math.sin(radians);
             //get y length.
-            double y = Watch.this.mShape.bottleLayerOuterRadius * Math.cos(radians);
+            double y = Watch.this.mShape.bottleLayerOuterRadius * Math.cos(radians) * -1;
             Logger.debug(TAG, "cal x:" + x + ",y:" + y);
             point.set(centerOfPoint.x, centerOfPoint.y);
             point.offset(Float.valueOf(String.format("%.3f", x)), Float.valueOf(String.format("%.3f", y)));
@@ -356,15 +373,47 @@ public class Watch extends View {
         PointF calPointInSmallDivider(int majorIdx, int curIdx){
             Logger.debug(TAG, "calculate small scale,majorIdx:" + majorIdx + ",curIdx:" + curIdx);
             double radians = getRadianInAngle(curIdx * DEGREE_IN_MINUTE_DIVIDER +((majorIdx - 1) * DEGRESS_IN_DIVIDER));
-            Logger.debug(TAG, "radians:" + radians);
+//            Logger.debug(TAG, "radians:" + radians);
             double x = Watch.this.mShape.bottleLayerOuterRadius * Math.sin(radians);
-            double y = Watch.this.mShape.bottleLayerOuterRadius * Math.cos(radians);
+            double y = Watch.this.mShape.bottleLayerOuterRadius * Math.cos(radians) * -1;
             Logger.debug(TAG, "cal x:" + x + ",y:" + y);
 
             PointF pointF = new PointF();
             pointF.set(centerOfPoint.x, centerOfPoint.y);
             pointF.offset(Float.valueOf(String.format("%.3f", x)), Float.valueOf(String.format("%.3f", y)));
 
+            return pointF;
+        }
+
+        /**
+         * 计算时针后面小三角。
+         *
+         * @param point*/
+        PointF calHourBackTriangle(TRIANGLE_POINT point, float angle){
+            int backTriangleRadius = 40;
+            PointF pointF = new PointF();
+            pointF.set(centerOfPoint.x, centerOfPoint.y);
+            if(point == TRIANGLE_POINT.POINT_A){
+                double radians = getRadianInAngle(angle);
+                double x = backTriangleRadius * Math.sin(radians);
+                double y = backTriangleRadius * Math.cos(radians) * -1;
+                Logger.debug(TAG, "A x:" + x + ",y:" + y);
+                pointF.offset(Float.valueOf(String.format("%.3f", x)),
+                        Float.valueOf(String.format("%.3f", y)));
+            }else if(point == TRIANGLE_POINT.POINT_B){
+                // center point of circle.
+                // do nothing.
+            }else if(point == TRIANGLE_POINT.POINT_C){
+                double radians = getRadianInAngle(360 - angle);
+                double x = backTriangleRadius * Math.sin(radians);
+                double y = backTriangleRadius * Math.cos(radians) * -1;
+                Logger.debug(TAG, "C x:" + x + ",y:" + y);
+                pointF.offset(Float.valueOf(String.format("%.3f", x)),
+                        Float.valueOf(String.format("%.3f", y)));
+            }else{
+                Logger.debug(TAG, "Calculate back triangle point error with:" + point);
+            }
+            Logger.debug(TAG, point + " calculate hour pointer of back triangle:" + pointF.x + "," + pointF.y);
             return pointF;
         }
 
