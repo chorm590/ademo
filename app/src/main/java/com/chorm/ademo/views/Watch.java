@@ -8,17 +8,31 @@ import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Typeface;
+import android.os.Handler;
+import android.os.Message;
 import android.util.AttributeSet;
 import android.view.View;
 
 import com.chorm.ademo.tools.Logger;
 
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TimeZone;
+
 public class Watch extends View {
 
     private static final String TAG = "Watch";
 
+    /**第一次执行完onDraw方法后会被置为true*/
+    private boolean isInitialized;
+
     private Shape mShape;
     private ColorManager mColorManager;
+    private SizeManager mSizeManager;
+    private Mathematics mMathematics;
+    private Clock mClock;
 
     /**The point of the view's center.*/
     private Point centerOfPoint;
@@ -26,17 +40,21 @@ public class Watch extends View {
     private Point rdPoint;
 
     enum TRIANGLE_POINT{
-        POINT_A,
-        POINT_B,
-        POINT_C
+        POINT_A, //等腰三角形的底边一个点。
+        POINT_B, //等腰三角形的顶点。
+        POINT_C  //等腰三角形底边的另一个点。
     };
 
     public Watch(Context context, AttributeSet attrs) {
+
         super(context, attrs);
         Logger.debug(TAG, "new Watch(Context,attrs)");
         mShape = new Shape();
         mColorManager = new ColorManager();
         centerOfPoint = new Point();
+        mSizeManager = new SizeManager();
+        mMathematics = new Mathematics();
+        mClock = new Clock();
         rdPoint = new Point();
 
         //set pointer color
@@ -74,7 +92,17 @@ public class Watch extends View {
             mColorManager.colorIntCoverGlass = color;
     }
 
-// ------------------------------------------------------------------------------------------------------------------------------
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+
+        //Manual destroy inner class handler.
+        for(String key : mClock.whatMap.keySet()){
+            mClock.mHandler.removeMessages(mClock.whatMap.get(key));
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------------------------------------------
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -95,7 +123,6 @@ public class Watch extends View {
         mShape.drawBottleLayerOuter(canvas);
         mShape.drawBottleLayerInner(canvas);
 
-
         //3. logo.
         mShape.drawLogo(canvas);
 
@@ -113,13 +140,16 @@ public class Watch extends View {
 
         //8. glass cover.
         mShape.drawCoverGlass(canvas);
+
+        if(!isInitialized)
+            isInitialized = true; //Clock.Handler will keep run.
     }
 
     private void countCenter() {
         int width = getWidth();
         int height = getHeight();
 
-        Logger.debug(TAG, "width:" + width + ",height:" + height);
+//        Logger.debug(TAG, "width:" + width + ",height:" + height);
         centerOfPoint.set(width / 2, height / 2);
         rdPoint.set(width, height);
     }
@@ -336,7 +366,7 @@ public class Watch extends View {
          * 时、分及秒针。
          * */
         void drawPointer(Canvas canvas){
-            Logger.debug(TAG, ">>> drawPointer <<<");
+//            Logger.debug(TAG, ">>> drawPointer <<<");
             //hours
             Paint hourPaint = new Paint();
             hourPaint.setColor(mColorManager.colorIntPointerHour);
@@ -344,13 +374,12 @@ public class Watch extends View {
 
             //calculate the triangle point.
             Mathematics math = new Mathematics();
-//            angle = 90;
-            PointF a = math.calHourTriangle(TRIANGLE_POINT.POINT_A, hourAngle);
+            PointF a = math.calHourTriangle(TRIANGLE_POINT.POINT_A, mSizeManager.hourPointerAngle);
             Path hourPointerPath = new Path();
             hourPointerPath.moveTo(a.x, a.y);
-            a = math.calHourTriangle(TRIANGLE_POINT.POINT_B, hourAngle);
+            a = math.calHourTriangle(TRIANGLE_POINT.POINT_B, mSizeManager.hourPointerAngle);
             hourPointerPath.lineTo(a.x, a.y);
-            a = math.calHourTriangle(TRIANGLE_POINT.POINT_C, hourAngle);
+            a = math.calHourTriangle(TRIANGLE_POINT.POINT_C, mSizeManager.hourPointerAngle);
             hourPointerPath.lineTo(a.x, a.y);
             hourPointerPath.close();
             canvas.drawPath(hourPointerPath, hourPaint);
@@ -362,11 +391,11 @@ public class Watch extends View {
 
             //Calculate the minute tirangle point.
             Path minutePath = new Path();
-            a = math.calMinuteTriangle(TRIANGLE_POINT.POINT_A, minuteAngle);
+            a = math.calMinuteTriangle(TRIANGLE_POINT.POINT_A, mSizeManager.minutePointerAngle);
             minutePath.moveTo(a.x, a.y);
-            a = math.calMinuteTriangle(TRIANGLE_POINT.POINT_B, minuteAngle);
+            a = math.calMinuteTriangle(TRIANGLE_POINT.POINT_B, mSizeManager.minutePointerAngle);
             minutePath.lineTo(a.x, a.y);
-            a = math.calMinuteTriangle(TRIANGLE_POINT.POINT_C, minuteAngle);
+            a = math.calMinuteTriangle(TRIANGLE_POINT.POINT_C, mSizeManager.minutePointerAngle);
             minutePath.lineTo(a.x, a.y);
             minutePath.close();
             canvas.drawPath(minutePath, minutePaint);
@@ -377,13 +406,13 @@ public class Watch extends View {
             secondPaint.setAntiAlias(true);
 
             //Calculate.
-            Logger.debug(TAG, "second angle:" + secondAngle);
+//            Logger.debug(TAG, "second angle:" + secondAngle);
             Path secondPath = new Path();
-            a = math.calSecondTriangle(TRIANGLE_POINT.POINT_A, secondAngle);
+            a = math.calSecondTriangle(TRIANGLE_POINT.POINT_A, mSizeManager.secondPointerAngle);
             secondPath.moveTo(a.x, a.y);
-            a = math.calSecondTriangle(TRIANGLE_POINT.POINT_B, secondAngle);
+            a = math.calSecondTriangle(TRIANGLE_POINT.POINT_B, mSizeManager.secondPointerAngle);
             secondPath.lineTo(a.x, a.y);
-            a = math.calSecondTriangle(TRIANGLE_POINT.POINT_C, secondAngle);
+            a = math.calSecondTriangle(TRIANGLE_POINT.POINT_C, mSizeManager.secondPointerAngle);
             secondPath.lineTo(a.x, a.y);
             secondPath.close();
             canvas.drawPath(secondPath, secondPaint);
@@ -440,7 +469,8 @@ public class Watch extends View {
             double y = Watch.this.mShape.bottleLayerOuterRadius * Math.cos(radians) * -1;
 //            Logger.debug(TAG, "cal x:" + x + ",y:" + y);
             point.set(centerOfPoint.x, centerOfPoint.y);
-            point.offset(Float.valueOf(String.format("%.3f", x)), Float.valueOf(String.format("%.3f", y)));
+            point.offset(Float.valueOf(String.format(Locale.CHINA, "%.3f", x)),
+                    Float.valueOf(String.format(Locale.CHINA, "%.3f", y)));
 
             return point;
         }
@@ -458,48 +488,40 @@ public class Watch extends View {
 
             PointF pointF = new PointF();
             pointF.set(centerOfPoint.x, centerOfPoint.y);
-            pointF.offset(Float.valueOf(String.format("%.3f", x)), Float.valueOf(String.format("%.3f", y)));
+            pointF.offset(Float.valueOf(String.format(Locale.CHINA, "%.3f", x)),
+                    Float.valueOf(String.format(Locale.CHINA, "%.3f", y)));
 
             return pointF;
         }
 
         /**
          * 计算时针三角形的坐标。
-         *
-         * @param point*/
+         * @param point ahhhhhh....
+         * */
         PointF calHourTriangle(TRIANGLE_POINT point, float angle){
-            int backTriangleRadius = 30; //控制时针胖瘦
-            PointF pointF = new PointF();
-            pointF.set(centerOfPoint.x, centerOfPoint.y);
+            PointF pointF = new PointF(centerOfPoint.x, centerOfPoint.y);
+            int length;
+            double radians;
             if(point == TRIANGLE_POINT.POINT_A){
-                double radians = getRadianInAngle(angle);
-                String xs = String.format("%.3f", backTriangleRadius * Math.sin(radians));
-                String ys = String.format("%.3f", backTriangleRadius * Math.cos(radians) * -1);
-                Logger.debug(TAG, "A x:" + xs + ",y:" + ys);
-                pointF.offset(Float.valueOf(xs),
-                        Float.valueOf(ys));
+                radians = getRadianInAngle(angle);
+                length = mSizeManager.hourPointerWidth;
             }else if(point == TRIANGLE_POINT.POINT_B){
                 // center point of circle.
-                // do nothing.
-                // the end of the pointer...
-                int length = 180; //控制时针长度
-                double radians = getRadianInAngle(angle + 135);
-                String xs = String.format("%.3f", length * Math.sin(radians));
-                String ys = String.format("%.3f", length * Math.cos(radians) * -1);
-                Logger.debug(TAG, "B x:" + xs + ",y:" + ys);
-                pointF.offset(Float.valueOf(xs),
-                        Float.valueOf(ys));
+                length = mSizeManager.hourPointerLength;
+                radians = getRadianInAngle(angle + (180 - mSizeManager.hourPointerBackTriangleAngle / 2));
             }else if(point == TRIANGLE_POINT.POINT_C){
-                double radians = getRadianInAngle(angle - 90);
-                String xs = String.format("%.3f", backTriangleRadius * Math.sin(radians));
-                String ys = String.format("%.3f", backTriangleRadius * Math.cos(radians) * -1);
-                Logger.debug(TAG, "C x:" + xs + ",y:" + ys);
-                pointF.offset(Float.valueOf(xs),
-                        Float.valueOf(ys));
+                radians = getRadianInAngle(angle - mSizeManager.hourPointerBackTriangleAngle);
+                length = mSizeManager.hourPointerWidth;
             }else{
+                length = 0;
+                radians = 0;
                 Logger.debug(TAG, "Calculate back triangle point error with:" + point);
             }
-            Logger.debug(TAG, point + " calculate hour pointer of back triangle:" + pointF.x + "," + pointF.y);
+
+            String xs = String.format(Locale.CHINA, "%.3f", length * Math.sin(radians));
+            String ys = String.format(Locale.CHINA, "%.3f", length * Math.cos(radians) * -1);
+            pointF.offset(Float.valueOf(xs), Float.valueOf(ys));
+//            Logger.debug(TAG, point + "(" + pointF.x + "," + pointF.y + ")");
             return pointF;
         }
 
@@ -507,31 +529,28 @@ public class Watch extends View {
          * 计算分针三角形坐标。
          * */
         PointF calMinuteTriangle(TRIANGLE_POINT point, float angle){
-            PointF pointF = new PointF();
-            pointF.set(centerOfPoint.x, centerOfPoint.y);
-            float width = 20; //
-            float height = 248;
+            PointF pointF = new PointF(centerOfPoint.x, centerOfPoint.y);
             double radians;
             float length;
             if(point == TRIANGLE_POINT.POINT_A){
                 radians = getRadianInAngle(angle);
-                length = width;
+                length = mSizeManager.minutePointerWidth;
             }else if(point == TRIANGLE_POINT.POINT_B){
-                radians = getRadianInAngle(angle + 135);
-                length = height;
+                radians = getRadianInAngle(angle + (180 - mSizeManager.minutePointerBackTriangleAngle / 2));
+                length = mSizeManager.minutePointerLength;
             }else if(point == TRIANGLE_POINT.POINT_C){
-                radians = getRadianInAngle(angle - 90);
-                length = width;
+                radians = getRadianInAngle(angle - mSizeManager.minutePointerBackTriangleAngle);
+                length = mSizeManager.minutePointerWidth;
             }else{
                 radians = 0;
                 length = 0;
                 Logger.debug(TAG, "calculate minute point error with:" + point);
             }
 
-            String xs = String.format("%.3f", length * Math.sin(radians));
-            String ys = String.format("%.3f", length * Math.cos(radians));
-            Logger.debug(TAG, "x:" + xs + ",y:" + ys);
+            String xs = String.format(Locale.CHINA, "%.3f", length * Math.sin(radians));
+            String ys = String.format(Locale.CHINA, "%.3f", length * Math.cos(radians) * -1);
             pointF.offset(Float.valueOf(xs), Float.valueOf(ys));
+//            Logger.debug(TAG, point + "(" + pointF.x + "," + pointF.y + ")");
 
             return pointF;
         }
@@ -542,29 +561,27 @@ public class Watch extends View {
         PointF calSecondTriangle(TRIANGLE_POINT point, float angle){
             PointF pointF = new PointF();
             pointF.set(centerOfPoint.x, centerOfPoint.y);
-            float width = 50; //
-            float height = 288;
             double radians;
             float length;
             if(point == TRIANGLE_POINT.POINT_A){
                 radians = getRadianInAngle(angle);
-                length = width;
+                length = mSizeManager.secondPointerWidth;
             }else if(point == TRIANGLE_POINT.POINT_B){
-                radians = getRadianInAngle(angle + 170);
-                length = height;
+                radians = getRadianInAngle(angle + (180 - mSizeManager.secondPointerBackTriangleAngle / 2));
+                length = mSizeManager.secondPointerLength;
             }else if(point == TRIANGLE_POINT.POINT_C){
-                radians = getRadianInAngle(angle - 20);
-                length = width;
+                radians = getRadianInAngle(angle - mSizeManager.secondPointerBackTriangleAngle);
+                length = mSizeManager.secondPointerWidth;
             }else{
                 radians = 0;
                 length = 0;
                 Logger.debug(TAG, "calculate minute point error with:" + point);
             }
 
-            String xs = String.format("%.3f", length * Math.sin(radians));
-            String ys = String.format("%.3f", length * Math.cos(radians));
-            Logger.debug(TAG, "x:" + xs + ",y:" + ys);
+            String xs = String.format(Locale.CHINA, "%.3f", length * Math.sin(radians));
+            String ys = String.format(Locale.CHINA, "%.3f", length * Math.cos(radians) * -1);
             pointF.offset(Float.valueOf(xs), Float.valueOf(ys));
+//            Logger.debug(TAG, point + "(" + pointF.x + "," + pointF.y + ")");
 
             return pointF;
         }
@@ -589,6 +606,25 @@ public class Watch extends View {
         private final String TAG = "Watch.SizeManager";
 
         //日期部分的尺寸。
+        //秒针的后方三角夹角
+        float secondPointerBackTriangleAngle = 20; //20 degree
+        float minutePointerBackTriangleAngle = 90;
+        float hourPointerBackTriangleAngle = 90;
+        //为了让指针能正确的指到0度等度数点上，要作一个校正操作。
+        float hourPointerAdjustAngle = 180 - hourPointerBackTriangleAngle / 2;
+        float minutePointerAdjustAngle = 180 - minutePointerBackTriangleAngle / 2;
+        float secondPointerAdjustAngle = 180 - secondPointerBackTriangleAngle / 2;
+        //
+        float secondPointerAngle;
+        float minutePointerAngle;
+        float hourPointerAngle;
+        //
+        final int secondPointerLength = 288;
+        final int secondPointerWidth = 50;
+        final int minutePointerLength = 248;
+        final int minutePointerWidth = 20;
+        final int hourPointerLength = 180;
+        final int hourPointerWidth = 30;
     }
 
     /**
@@ -598,10 +634,179 @@ public class Watch extends View {
 
         private final String TAG = "Watch.Clock";
 
+        /*
+        * default clock time is 00:00:00
+        * */
+
+        Map<String, Integer> whatMap = new HashMap<>();
+        Time mTime = new Time();
+
+        Handler mHandler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                if(msg.what == whatMap.get("REFRESH_TIME")){
+                    timeFlowing();
+                    applyToView();
+                    this.sendEmptyMessageDelayed(whatMap.get("REFRESH_TIME"), 1000/*pray*/);
+                }else if(msg.what == whatMap.get("WAIT_FOR_INITIALIZED")){
+                    if(isInitialized){
+                        Logger.debug(TAG, "Watch View initialized,begin to clocking...");
+                        this.removeMessages(whatMap.get("WAIT_FOR_INITIALIZED"));
+                        reset();
+                        this.sendEmptyMessageDelayed(whatMap.get("REFRESH_TIME"), 990/*I guess*/);
+                    }else{
+                        this.sendEmptyMessageDelayed(whatMap.get("WAIT_FOR_INITIALIZED"), 128);
+                    }
+                }
+            }
+        };
+
         Clock(){
             Logger.debug(TAG, "new Clock()");
+            whatMap.put("REFRESH_TIME", 0);
+            whatMap.put("WAIT_FOR_INITIALIZED", 1);
+
+            mHandler.sendEmptyMessage(whatMap.get("WAIT_FOR_INITIALIZED"));
         }
 
+        private void timeFlowing() {
+            mTime.isecond++;
+            if(mTime.isecond >= 60){
+                mTime.isecond = 0;
+                mTime.iminute++;
+                if(mTime.iminute >= 60){
+                    mTime.iminute = 0;
+                    mTime.ihour++;
+                    if(mTime.ihour >= 24){
+                        mTime.ihour = 0;
+                        mTime.iday++;
+                        if(dayOverflow()){
+                            mTime.iday = 1;
+                            mTime.imonth++;
+                            if(mTime.imonth > 12){
+                                mTime.imonth = 1;
+                                mTime.iyear++;
+                            }
+                        }
+                    }
+                }
+            }
+            mTime.refreshDateString();
+            mTime.printDate();
+        }
+
+        /**
+         * 让各指针适应上当前系统时间。
+         * */
+        void reset(){
+            getSystemTime();
+            mTime.printDate();
+        }
+
+        /**
+         * 将时间更新到View中显示。
+         * */
+        void applyToView(){
+            //set hour pointer...
+            float degree = 0;
+            degree = mTime.ihour * mMathematics.DEGRESS_IN_DIVIDER; //base degree..
+            degree += (float)mTime.iminute / 60 * mMathematics.DEGRESS_IN_DIVIDER;
+            mSizeManager.hourPointerAngle = degree - mSizeManager.hourPointerAdjustAngle;
+
+            //set minute pointer...
+            degree = mTime.iminute * mMathematics.DEGREE_IN_MINUTE_DIVIDER;
+            degree += (float)mTime.isecond / 60 * mMathematics.DEGREE_IN_MINUTE_DIVIDER;
+            mSizeManager.minutePointerAngle = degree - mSizeManager.minutePointerAdjustAngle;
+//            mSizeManager.minutePointerAngle = 0;
+
+            //set second pointer...
+            mSizeManager.secondPointerAngle = (float)mTime.isecond * 6;
+            mSizeManager.secondPointerAngle -= mSizeManager.secondPointerAdjustAngle;
+
+            Logger.debug(TAG, "hour:" + mTime.ihour + ",minute:" + mTime.iminute + ",second:" + mTime.isecond);
+            Logger.debug(TAG, "hour:" + mSizeManager.hourPointerAngle + ",minute:" + mSizeManager.minutePointerAngle
+                + ",second:" + mSizeManager.secondPointerAngle);
+
+            invalidate();//refreshing...
+        }
+
+        /**
+         * 设置时针指向哪一位置。
+         * */
+        void setHour(){
+
+        }
+
+        void getSystemTime(){
+            Calendar mCalendar = Calendar.getInstance();
+            mCalendar.setTimeZone(TimeZone.getTimeZone("GMT+8:00"));
+            mTime.iyear = mCalendar.get(Calendar.YEAR);
+            mTime.imonth = mCalendar.get(Calendar.MONTH);
+            mTime.iday = mCalendar.get(Calendar.DAY_OF_MONTH);
+            mTime.ihour = mCalendar.get(Calendar.HOUR);
+            mTime.iminute = mCalendar.get(Calendar.MINUTE);
+            mTime.isecond = mCalendar.get(Calendar.SECOND);
+            mTime.refreshDateString();
+        }
+
+        /**
+         * 根据当前年月来判断当月有多少天。
+         * */
+        boolean dayOverflow(){
+            return mTime.iday > 30; //temporary
+        }
+
+        /**
+         * 保存当前时间值。
+         * */
+        class Time {
+
+            final String TAG = "Watch.Clock.Time";
+
+            boolean is24hmode;
+            int iyear;
+            int imonth;
+            int iday;
+            int ihour;
+            int iminute;
+            int isecond;
+
+            String dateLong;
+            String dateShort;
+
+            /**
+             * 将整型类型的日期时间转换为字符串型。
+             * */
+            void refreshDateString(){
+                StringBuilder sb = new StringBuilder();
+                sb.append(iyear);
+                sb.append("-");
+                sb.append(imonth);
+                sb.append("-");
+                sb.append(iday);
+                sb.append(" ");
+                sb.append(ihour);
+                sb.append(":");
+                if(iminute < 10)
+                    sb.append("0");
+                sb.append(iminute);
+                sb.append(":");
+                if(isecond < 10)
+                    sb.append("0");
+                sb.append(isecond);
+
+                try {
+                    dateLong = sb.toString();
+                    dateShort = sb.toString().split(" ")[1];
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+
+            void printDate(){
+//                Logger.debug(TAG, mTime.dateLong + "," + mTime.dateShort);
+            }
+        }
 
     }
 
