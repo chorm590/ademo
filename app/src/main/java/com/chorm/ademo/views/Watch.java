@@ -359,7 +359,10 @@ public class Watch extends View {
 
             Paint.FontMetrics fm = datePaint.getFontMetrics();
 
-            canvas.drawText("31", left + (right - left) / 2, top + (bottom - top) / 2 - (fm.top + fm.bottom) / 2, datePaint);
+            canvas.drawText(String.valueOf(mClock.mTime.iday),
+                    left + (right - left) / 2,
+                    top + (bottom - top) / 2 - (fm.top + fm.bottom) / 2,
+                    datePaint);
         }
 
         /**
@@ -708,33 +711,24 @@ public class Watch extends View {
          * */
         void applyToView(){
             //set hour pointer...
-            float degree = 0;
-            degree = mTime.ihour * mMathematics.DEGRESS_IN_DIVIDER; //base degree..
-            degree += (float)mTime.iminute / 60 * mMathematics.DEGRESS_IN_DIVIDER;
-            mSizeManager.hourPointerAngle = degree - mSizeManager.hourPointerAdjustAngle;
+            mSizeManager.hourPointerAngle = (mTime.ihour>11?mTime.ihour-12:mTime.ihour) * mMathematics.DEGRESS_IN_DIVIDER;
+            mSizeManager.hourPointerAngle += (float)mTime.iminute / 60 * mMathematics.DEGRESS_IN_DIVIDER;
+            mSizeManager.hourPointerAngle -= mSizeManager.hourPointerAdjustAngle;
 
             //set minute pointer...
-            degree = mTime.iminute * mMathematics.DEGREE_IN_MINUTE_DIVIDER;
-            degree += (float)mTime.isecond / 60 * mMathematics.DEGREE_IN_MINUTE_DIVIDER;
-            mSizeManager.minutePointerAngle = degree - mSizeManager.minutePointerAdjustAngle;
-//            mSizeManager.minutePointerAngle = 0;
+            mSizeManager.minutePointerAngle = mTime.iminute * mMathematics.DEGREE_IN_MINUTE_DIVIDER;
+            mSizeManager.minutePointerAngle += (float)mTime.isecond / 60 * mMathematics.DEGREE_IN_MINUTE_DIVIDER;
+            mSizeManager.minutePointerAngle -= mSizeManager.minutePointerAdjustAngle;
 
             //set second pointer...
             mSizeManager.secondPointerAngle = (float)mTime.isecond * 6;
             mSizeManager.secondPointerAngle -= mSizeManager.secondPointerAdjustAngle;
 
-            Logger.debug(TAG, "hour:" + mTime.ihour + ",minute:" + mTime.iminute + ",second:" + mTime.isecond);
-            Logger.debug(TAG, "hour:" + mSizeManager.hourPointerAngle + ",minute:" + mSizeManager.minutePointerAngle
-                + ",second:" + mSizeManager.secondPointerAngle);
+//            Logger.debug(TAG, "hour:" + mTime.ihour + ",minute:" + mTime.iminute + ",second:" + mTime.isecond);
+//            Logger.debug(TAG, "hour:" + mSizeManager.hourPointerAngle + ",minute:" + mSizeManager.minutePointerAngle
+//                + ",second:" + mSizeManager.secondPointerAngle);
 
             invalidate();//refreshing...
-        }
-
-        /**
-         * 设置时针指向哪一位置。
-         * */
-        void setHour(){
-
         }
 
         void getSystemTime(){
@@ -743,7 +737,7 @@ public class Watch extends View {
             mTime.iyear = mCalendar.get(Calendar.YEAR);
             mTime.imonth = mCalendar.get(Calendar.MONTH);
             mTime.iday = mCalendar.get(Calendar.DAY_OF_MONTH);
-            mTime.ihour = mCalendar.get(Calendar.HOUR);
+            mTime.ihour = mCalendar.get(Calendar.HOUR_OF_DAY);
             mTime.iminute = mCalendar.get(Calendar.MINUTE);
             mTime.isecond = mCalendar.get(Calendar.SECOND);
             mTime.refreshDateString();
@@ -763,7 +757,6 @@ public class Watch extends View {
 
             final String TAG = "Watch.Clock.Time";
 
-            boolean is24hmode;
             int iyear;
             int imonth;
             int iday;
@@ -804,7 +797,7 @@ public class Watch extends View {
             }
 
             void printDate(){
-//                Logger.debug(TAG, mTime.dateLong + "," + mTime.dateShort);
+                Logger.debug(TAG, mTime.dateLong + "," + mTime.dateShort);
             }
         }
 
