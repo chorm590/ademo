@@ -637,9 +637,7 @@ public class Watch extends View {
 
         private final String TAG = "Watch.Clock";
 
-        /*
-        * default clock time is 00:00:00
-        * */
+        int daysOfCurrentMonth;
 
         Map<String, Integer> whatMap = new HashMap<>();
         Time mTime = new Time();
@@ -683,13 +681,14 @@ public class Watch extends View {
                     if(mTime.ihour >= 24){
                         mTime.ihour = 0;
                         mTime.iday++;
-                        if(dayOverflow()){
+                        if(mTime.iday > daysOfCurrentMonth){
                             mTime.iday = 1;
                             mTime.imonth++;
                             if(mTime.imonth > 12){
                                 mTime.imonth = 1;
                                 mTime.iyear++;
                             }
+                            makeSureDaysOfCurrentMonth();//Must do it.
                         }
                     }
                 }
@@ -703,7 +702,44 @@ public class Watch extends View {
          * */
         void reset(){
             getSystemTime();
+            makeSureDaysOfCurrentMonth();
             mTime.printDate();
+        }
+
+
+        /**
+         * 确定当前月有多少天。
+         * */
+        void makeSureDaysOfCurrentMonth(){
+            switch (mTime.imonth){
+                case 1:
+                case 3:
+                case 5:
+                case 7:
+                case 8:
+                case 10:
+                case 12:
+                    daysOfCurrentMonth = 31;
+                    break;
+                case 4:
+                case 6:
+                case 9:
+                case 11:
+                    daysOfCurrentMonth = 30;
+                    break;
+                case 2:
+                    daysOfCurrentMonth = 28;
+                    if(mTime.iyear % 4 == 0){
+                        if(mTime.iyear % 100 > 0 || mTime.iyear % 400 == 0){
+                            daysOfCurrentMonth++;
+                        }
+                    }
+                    break;
+                default:
+                    Logger.error(TAG, "Calculate days of current month error...");
+                    break;
+            }
+            Logger.debug(TAG, "daysOfCurrentMonth:" + daysOfCurrentMonth);
         }
 
         /**
@@ -741,13 +777,6 @@ public class Watch extends View {
             mTime.iminute = mCalendar.get(Calendar.MINUTE);
             mTime.isecond = mCalendar.get(Calendar.SECOND);
             mTime.refreshDateString();
-        }
-
-        /**
-         * 根据当前年月来判断当月有多少天。
-         * */
-        boolean dayOverflow(){
-            return mTime.iday > 30; //temporary
         }
 
         /**
