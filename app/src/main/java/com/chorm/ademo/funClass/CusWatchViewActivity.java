@@ -25,8 +25,7 @@ public class CusWatchViewActivity extends Activity implements View.OnClickListen
     public void onClick(View v) {
         Logger.debug("onClick:" + v);
         if(v == mWatch){
-            mWatch.refresh();
-            mWatch.invalidate();
+
         }
     }
 }

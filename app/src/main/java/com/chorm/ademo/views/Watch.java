@@ -11,6 +11,7 @@ import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
+import android.util.TypedValue;
 import android.view.View;
 
 import com.chorm.ademo.tools.Logger;
@@ -46,7 +47,6 @@ public class Watch extends View {
     };
 
     public Watch(Context context, AttributeSet attrs) {
-
         super(context, attrs);
         Logger.debug(TAG, "new Watch(Context,attrs)");
         mShape = new Shape();
@@ -108,7 +108,11 @@ public class Watch extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         //refresh view properties.
-        countCenter();
+        if(!isInitialized){
+            countCenter();
+            //Initialize the sizes.
+            mSizeManager.initSizes();
+        }
         //set background transparent.
         canvas.drawColor(Color.alpha(0));
 
@@ -141,8 +145,9 @@ public class Watch extends View {
         //8. glass cover.
         mShape.drawCoverGlass(canvas);
 
-        if(!isInitialized)
+        if(!isInitialized) {
             isInitialized = true; //Clock.Handler will keep run.
+        }
     }
 
     private void countCenter() {
@@ -155,9 +160,7 @@ public class Watch extends View {
     }
 
     public void refresh(){
-        mShape.secondAngle -= 6;
-        if(mShape.secondAngle <= 0)
-            mShape.secondAngle = 360;
+        //TODO free it now.
     }
 
     /**
@@ -165,28 +168,17 @@ public class Watch extends View {
      * */
     private class Shape {
 
-        float outBorderRadius;
-        float outBorderRadius2;
-        float bottleLayerOuterRadius;
-        float bottleLayerInnerRadius;
         float logoDownTextY;
-
-        int hourAngle; //给时针用的角度
-        float minuteAngle; //给分针用的角度。
-        float secondAngle; //给秒针用的角度。
 
         Shape(){
             Logger.debug(TAG, "new Shape()");
-            hourAngle = 330;
-            minuteAngle = 60;
-            secondAngle = 10;
         }
 
         void drawZeroPoint(Canvas canvas){
 //            Logger.debug(TAG, "draw zero-point,x:0,y:0");
             Paint paint = new Paint();
             paint.setColor(Color.RED);
-            canvas.drawCircle(0, 0, 7, paint);
+            canvas.drawCircle(0, 0, mSizeManager.dp2px(2), paint);
         }
 
         void drawCenterPoint(Canvas canvas){
@@ -207,7 +199,7 @@ public class Watch extends View {
             Paint paint = new Paint();
             paint.setColor(Color.GRAY);
             paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(2);
+            paint.setStrokeWidth(mSizeManager.dp2px(1));
             canvas.drawRect(0, 0, rdPoint.x, rdPoint.y, paint);
         }
 
@@ -220,10 +212,8 @@ public class Watch extends View {
             paint.setAntiAlias(true);
             paint.setColor(Color.argb(0xff, 0xf0, 0xe6, 0x8c));
             paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(17);
-            outBorderRadius = rdPoint.x < rdPoint.y ? rdPoint.x : rdPoint.y;
-            outBorderRadius = (float) (outBorderRadius * 0.9 / 2);
-            canvas.drawCircle(centerOfPoint.x, centerOfPoint.y, outBorderRadius, paint);
+            paint.setStrokeWidth(mSizeManager.outBorderStrokeWidth);
+            canvas.drawCircle(centerOfPoint.x, centerOfPoint.y, mSizeManager.outBorderRadius, paint);
         }
 
         /**
@@ -234,9 +224,8 @@ public class Watch extends View {
             paint.setAntiAlias(true);
             paint.setColor(Color.argb(0xff, 0xff, 0xf6, 0x8f));
             paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(3);
-            outBorderRadius2 = outBorderRadius - 9;
-            canvas.drawCircle(centerOfPoint.x, centerOfPoint.y, outBorderRadius2, paint);
+            paint.setStrokeWidth(mSizeManager.outBorder2StrokeWidth);
+            canvas.drawCircle(centerOfPoint.x, centerOfPoint.y, mSizeManager.outBorder2Radius, paint);
         }
 
         /**
@@ -246,12 +235,11 @@ public class Watch extends View {
             Paint paint = new Paint();
             paint.setAntiAlias(true);
             paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(15);
+            paint.setStrokeWidth(mSizeManager.bottleLayerOutsideStrokeWidth);
             paint.setColor(Color.argb(0xff, 0xe8, 0xe8, 0xe8)); //I need lightly gray...
 
-            bottleLayerOuterRadius = outBorderRadius2 - 9;
 //            Logger.debug(TAG, "bottle layer outer radius:" + bottleLayerOuterRadius);
-            canvas.drawCircle(centerOfPoint.x, centerOfPoint.y, bottleLayerOuterRadius, paint);
+            canvas.drawCircle(centerOfPoint.x, centerOfPoint.y, mSizeManager.bottleLayerOutsideRadius, paint);
         }
 
         /**
@@ -261,9 +249,8 @@ public class Watch extends View {
             Paint paint = new Paint();
             paint.setAntiAlias(true);
             paint.setColor(Color.argb(0xff, 0xfa, 0xfa, 0xf0)); //要磨砂的！！！
-            bottleLayerInnerRadius = (float) (bottleLayerOuterRadius - 7.5);
 //            Logger.debug(TAG, "Bottle layer inner radius:" + bottleLayerInnerRadius);
-            canvas.drawCircle(centerOfPoint.x, centerOfPoint.y, bottleLayerInnerRadius, paint);
+            canvas.drawCircle(centerOfPoint.x, centerOfPoint.y, mSizeManager.bottleLayerInsideRadius, paint);
         }
 
         /**
@@ -283,16 +270,15 @@ public class Watch extends View {
             Paint dividePaint = new Paint();
             dividePaint.setColor(Color.RED);
             dividePaint.setAntiAlias(true);
-            Mathematics math = new Mathematics();
             PointF pos;
 //            Logger.debug(TAG, "scale radius:"+ Watch.this.mShape.bottleLayerOuterRadius);
             for(int i = 1/*Must begin with 1.*/; i < 13; i++){
 //                Logger.debug(TAG, "drawing small scale.");
                 for(int j = 1; j < 5; j++){
-                    pos = math.calPointInSmallDivider(i, j);
+                    pos = mMathematics.calPointInSmallDivider(i, j);
                     canvas.drawCircle(pos.x, pos.y, 2, normalPaint);
                 }
-                pos = math.calPointInDivider(i);
+                pos = mMathematics.calPointInDivider(i);
 //                Logger.debug(TAG, "draw x:" + pos.x + ",draw y:" + pos.y);
                 canvas.drawCircle(pos.x, pos.y, 5, dividePaint);
             }
@@ -306,21 +292,21 @@ public class Watch extends View {
             //上方的文字。
             //内底盘高度的0.618位置。
             float x = centerOfPoint.x;
-            float y = Watch.this.mShape.bottleLayerInnerRadius * 0.618f;
+            float y = Watch.this.mSizeManager.bottleLayerInsideRadius * 0.618f;
             Paint paint = new Paint();
             paint.setColor(Color.BLACK);
             paint.setAntiAlias(true);
-            paint.setTextSize(36);
+            paint.setTextSize(mSizeManager.sp2pt(14));
             paint.setTextAlign(Paint.Align.CENTER);
             paint.setTypeface(Typeface.DEFAULT_BOLD);
             canvas.drawText("ROSSINI", x, y, paint);
 
             //下方的文字
-            logoDownTextY = Watch.this.mShape.bottleLayerInnerRadius * 1.7f;
+            logoDownTextY = Watch.this.mSizeManager.bottleLayerInsideRadius * 1.7f;
             Paint downTextPaint = new Paint();
             downTextPaint.setAntiAlias(true);
             downTextPaint.setColor(Color.BLACK);
-            downTextPaint.setTextSize(20);
+            downTextPaint.setTextSize(mSizeManager.sp2pt(9));
             downTextPaint.setTextAlign(Paint.Align.CENTER);
 
             canvas.drawText("SAPPHIRE", x, logoDownTextY, downTextPaint);
@@ -336,12 +322,12 @@ public class Watch extends View {
             rectPaint.setColor(Color.argb(0xff, 0xf0, 0xe6, 0x8c));
             rectPaint.setAntiAlias(true);
             rectPaint.setStyle(Paint.Style.STROKE);
-            rectPaint.setStrokeWidth(7);
+            rectPaint.setStrokeWidth(mSizeManager.dateBorderStrokeWidth);
 
-            float left = centerOfPoint.x - 30;
-            float top = logoDownTextY + 30;
-            float right = centerOfPoint.x + 30;
-            float bottom = top + 70;
+            float left = centerOfPoint.x - Watch.this.mSizeManager.dp2px(14);
+            float top = logoDownTextY + Watch.this.mSizeManager.dp2px(14);
+            float right = centerOfPoint.x + Watch.this.mSizeManager.dp2px(14);
+            float bottom = top + Watch.this.mSizeManager.dp2px(30);
             canvas.drawRect(left, top, right, bottom, rectPaint);
 
             //白色的日期显示背景。
@@ -349,12 +335,16 @@ public class Watch extends View {
             bgPaint.setColor(Color.WHITE); //最好搞个白色磨砂的。
             bgPaint.setAntiAlias(true);
 
-            canvas.drawRect(left + 3.5f, top + 3.5f, right - 3.5f, bottom - 3.5f, bgPaint);
+            canvas.drawRect(left + Watch.this.mSizeManager.dp2px(1.6f),
+                    top + Watch.this.mSizeManager.dp2px(1.6f),
+                    right - Watch.this.mSizeManager.dp2px(1.6f),
+                    bottom - Watch.this.mSizeManager.dp2px(1.6f),
+                    bgPaint);
 
             //日期数字。
             Paint datePaint = new Paint();
             datePaint.setAntiAlias(true);
-            datePaint.setTextSize(40);
+            datePaint.setTextSize(mSizeManager.sp2pt(15));
             datePaint.setTextAlign(Paint.Align.CENTER);
 
             Paint.FontMetrics fm = datePaint.getFontMetrics();
@@ -376,13 +366,12 @@ public class Watch extends View {
             hourPaint.setAntiAlias(true);
 
             //calculate the triangle point.
-            Mathematics math = new Mathematics();
-            PointF a = math.calHourTriangle(TRIANGLE_POINT.POINT_A, mSizeManager.hourPointerAngle);
+            PointF a = mMathematics.calHourTriangle(TRIANGLE_POINT.POINT_A, mSizeManager.hourPointerAngle);
             Path hourPointerPath = new Path();
             hourPointerPath.moveTo(a.x, a.y);
-            a = math.calHourTriangle(TRIANGLE_POINT.POINT_B, mSizeManager.hourPointerAngle);
+            a = mMathematics.calHourTriangle(TRIANGLE_POINT.POINT_B, mSizeManager.hourPointerAngle);
             hourPointerPath.lineTo(a.x, a.y);
-            a = math.calHourTriangle(TRIANGLE_POINT.POINT_C, mSizeManager.hourPointerAngle);
+            a = mMathematics.calHourTriangle(TRIANGLE_POINT.POINT_C, mSizeManager.hourPointerAngle);
             hourPointerPath.lineTo(a.x, a.y);
             hourPointerPath.close();
             canvas.drawPath(hourPointerPath, hourPaint);
@@ -394,11 +383,11 @@ public class Watch extends View {
 
             //Calculate the minute tirangle point.
             Path minutePath = new Path();
-            a = math.calMinuteTriangle(TRIANGLE_POINT.POINT_A, mSizeManager.minutePointerAngle);
+            a = mMathematics.calMinuteTriangle(TRIANGLE_POINT.POINT_A, mSizeManager.minutePointerAngle);
             minutePath.moveTo(a.x, a.y);
-            a = math.calMinuteTriangle(TRIANGLE_POINT.POINT_B, mSizeManager.minutePointerAngle);
+            a = mMathematics.calMinuteTriangle(TRIANGLE_POINT.POINT_B, mSizeManager.minutePointerAngle);
             minutePath.lineTo(a.x, a.y);
-            a = math.calMinuteTriangle(TRIANGLE_POINT.POINT_C, mSizeManager.minutePointerAngle);
+            a = mMathematics.calMinuteTriangle(TRIANGLE_POINT.POINT_C, mSizeManager.minutePointerAngle);
             minutePath.lineTo(a.x, a.y);
             minutePath.close();
             canvas.drawPath(minutePath, minutePaint);
@@ -411,11 +400,11 @@ public class Watch extends View {
             //Calculate.
 //            Logger.debug(TAG, "second angle:" + secondAngle);
             Path secondPath = new Path();
-            a = math.calSecondTriangle(TRIANGLE_POINT.POINT_A, mSizeManager.secondPointerAngle);
+            a = mMathematics.calSecondTriangle(TRIANGLE_POINT.POINT_A, mSizeManager.secondPointerAngle);
             secondPath.moveTo(a.x, a.y);
-            a = math.calSecondTriangle(TRIANGLE_POINT.POINT_B, mSizeManager.secondPointerAngle);
+            a = mMathematics.calSecondTriangle(TRIANGLE_POINT.POINT_B, mSizeManager.secondPointerAngle);
             secondPath.lineTo(a.x, a.y);
-            a = math.calSecondTriangle(TRIANGLE_POINT.POINT_C, mSizeManager.secondPointerAngle);
+            a = mMathematics.calSecondTriangle(TRIANGLE_POINT.POINT_C, mSizeManager.secondPointerAngle);
             secondPath.lineTo(a.x, a.y);
             secondPath.close();
             canvas.drawPath(secondPath, secondPaint);
@@ -428,7 +417,7 @@ public class Watch extends View {
             Paint coverGlassPaint = new Paint();
             coverGlassPaint.setColor(mColorManager.colorIntCoverGlass);
             coverGlassPaint.setAntiAlias(true);
-            float r = outBorderRadius2;
+            float r = mSizeManager.outBorder2Radius;
             canvas.drawCircle(centerOfPoint.x, centerOfPoint.y, r, coverGlassPaint);
         }
     }
@@ -467,9 +456,9 @@ public class Watch extends View {
             PointF point = new PointF();
             double radians = getRadianInAngle(DEGRESS_IN_DIVIDER * idx);
             //get x length.
-            double x = Watch.this.mShape.bottleLayerOuterRadius * Math.sin(radians);
+            double x = Watch.this.mSizeManager.bottleLayerOutsideRadius * Math.sin(radians);
             //get y length.
-            double y = Watch.this.mShape.bottleLayerOuterRadius * Math.cos(radians) * -1;
+            double y = Watch.this.mSizeManager.bottleLayerOutsideRadius * Math.cos(radians) * -1;
 //            Logger.debug(TAG, "cal x:" + x + ",y:" + y);
             point.set(centerOfPoint.x, centerOfPoint.y);
             point.offset(Float.valueOf(String.format(Locale.CHINA, "%.3f", x)),
@@ -485,8 +474,8 @@ public class Watch extends View {
 //            Logger.debug(TAG, "calculate small scale,majorIdx:" + majorIdx + ",curIdx:" + curIdx);
             double radians = getRadianInAngle(curIdx * DEGREE_IN_MINUTE_DIVIDER +((majorIdx - 1) * DEGRESS_IN_DIVIDER));
 //            Logger.debug(TAG, "radians:" + radians);
-            double x = Watch.this.mShape.bottleLayerOuterRadius * Math.sin(radians);
-            double y = Watch.this.mShape.bottleLayerOuterRadius * Math.cos(radians) * -1;
+            double x = Watch.this.mSizeManager.bottleLayerOutsideRadius * Math.sin(radians);
+            double y = Watch.this.mSizeManager.bottleLayerOutsideRadius * Math.cos(radians) * -1;
 //            Logger.debug(TAG, "cal x:" + x + ",y:" + y);
 
             PointF pointF = new PointF();
@@ -572,6 +561,7 @@ public class Watch extends View {
             }else if(point == TRIANGLE_POINT.POINT_B){
                 radians = getRadianInAngle(angle + (180 - mSizeManager.secondPointerBackTriangleAngle / 2));
                 length = mSizeManager.secondPointerLength;
+                Logger.debug(TAG, "second pointer length:" + mSizeManager.secondPointerLength);
             }else if(point == TRIANGLE_POINT.POINT_C){
                 radians = getRadianInAngle(angle - mSizeManager.secondPointerBackTriangleAngle);
                 length = mSizeManager.secondPointerWidth;
@@ -622,12 +612,60 @@ public class Watch extends View {
         float minutePointerAngle;
         float hourPointerAngle;
         //
-        final int secondPointerLength = 288;
-        final int secondPointerWidth = 50;
-        final int minutePointerLength = 248;
-        final int minutePointerWidth = 20;
-        final int hourPointerLength = 180;
-        final int hourPointerWidth = 30;
+        final int secondPointerLength = (int)dp2px(110);
+        final int secondPointerWidth = (int)dp2px(20);
+        final int minutePointerLength = (int)dp2px(95);
+        final int minutePointerWidth = (int)dp2px(8);
+        final int hourPointerLength = (int)dp2px(69);
+        final int hourPointerWidth = (int)dp2px(12);
+
+        /**最外层边框的宽度*/
+        final float outBorderStrokeWidth = dp2px(7);
+        /**最外层边框的圆半径*/
+        float outBorderRadius = dp2px(100); //default is 100dp.
+        /**最外层边框与内层玻璃接缝的宽度*/
+        final float outBorder2StrokeWidth = dp2px(1);
+        /**最外层边框与玻璃盖接缝处的半径。*/
+        float outBorder2Radius = dp2px(97); //default,actually will never use it.
+        /**手表底盘外圆，用于承载刻度的圆盘。*/
+        final float bottleLayerOutsideStrokeWidth = dp2px(6);
+        /**底盘外圆半径。*/
+        float bottleLayerOutsideRadius;
+        /**手表底盘内圆半径。*/
+        float bottleLayerInsideRadius;
+        /**日期外边框宽度*/
+        final float dateBorderStrokeWidth = dp2px(3);
+
+        void initSizes(){
+            //1
+            outBorderRadius = rdPoint.x < rdPoint.y ? rdPoint.x : rdPoint.y;
+            outBorderRadius = (float)(outBorderRadius * 0.9 / 2);
+            //2
+            outBorder2Radius = outBorderRadius - dp2px(3.5f);
+            //3
+            bottleLayerOutsideRadius = outBorder2Radius - dp2px(4);
+            //4
+            bottleLayerInsideRadius = bottleLayerOutsideRadius - dp2px(3);
+        }
+
+        float px2dp(float px){
+            return px / getContext().getResources().getDisplayMetrics().density;
+        }
+
+        float px2sp(float px){
+            return px / getContext().getResources().getDisplayMetrics().density;
+        }
+
+        float dp2px(float dp){
+            return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp,
+                    getContext().getResources().getDisplayMetrics());
+        }
+
+        float sp2pt(float sp){
+            return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp,
+                    getContext().getResources().getDisplayMetrics());
+        }
+
     }
 
     /**
